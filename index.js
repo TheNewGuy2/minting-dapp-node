@@ -4,7 +4,7 @@ const app = express();
 const cors = require('cors');
 const OpenAI = require('openai');
 
-
+//
 app.use(cors());
 app.use(express.json());
 require('dotenv').config();
@@ -29,3 +29,4 @@ app.post('/completion', async (req, res) => {
 // app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 exports.api = functions.https.onRequest(app);
+
