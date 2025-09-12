@@ -1,88 +1,47 @@
-name: Firebase Hosting — Preview & Live
+name: Firebase Functions — CI & Deploy
 
 on:
   push:
     branches: [ main ]
-    paths-ignore:
-      - ".github/**"
-      - "README.md"
-      - "LICENSE"
-  pull_request:
   workflow_dispatch:
 
-# Avoid overlapping deploys per ref
 concurrency:
-  group: firebase-${{ github.ref }}
+  group: firebase-functions-${{ github.ref }}
   cancel-in-progress: true
 
-# Allow PR comments for preview links
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
-  preview:
-    name: Deploy Preview (PR)
-    if: github.event_name == 'pull_request'
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      # Node is only needed if you have deps/build; safe to keep.
-      - uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: package-lock.json
 
-      - name: Install dependencies (if any)
+      - name: Install dependencies
         run: |
-          if [ -f package-lock.json ]; then npm ci; fi
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-      - name: Build (if package.json defines a build script)
-        run: |
-          if npm run -s build >/dev/null 2>&1; then
-            npm run build
-          else
-            echo "No build script; skipping"
-          fi
-
-      - name: Deploy to Firebase Hosting (Preview)
-        uses: FirebaseExtended/action-hosting-deploy@v0
+      # Auth to Google Cloud using a service account JSON stored in repo secrets
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          repoToken: "${{ secrets.GITHUB_TOKEN }}"            # comment preview URL on PR
-          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
-          # projectId: your-firebase-project-id                # optional when .firebaserc exists
-          # entryPoint: "."                                    # repo root (default)
-          expires: 30d                                         # preview lifetime
-        # If you use multiple Hosting targets, you can add: target: yourTarget
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
-  live:
-    name: Deploy Live (main)
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
+      - name: Show Firebase CLI version
+        run: firebase --version
 
-      - name: Install dependencies (if any)
-        run: |
-          if [ -f package-lock.json ]; then npm ci; fi
-
-      - name: Build (if package.json defines a build script)
-        run: |
-          if npm run -s build >/dev/null 2>&1; then
-            npm run build
-          else
-            echo "No build script; skipping"
-          fi
-
-      - name: Deploy to Firebase Hosting (Live)
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
-          # projectId: your-firebase-project-id                # optional when .firebaserc exists
-          channelId: live
+      # Deploy only Cloud Functions (uses .firebaserc for the default project)
+      - name: Deploy Functions
+        run: firebase deploy --only functions --non-interactive
