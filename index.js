@@ -20,7 +20,7 @@ exports.api = onRequest(
     secrets: [OPENAI_API_KEY],
   },
   async (req, res) => {
-    // --- CORS (adjust origins as needed) ---//
+    // --- CORS (adjust origins as needed) ---////
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -65,4 +65,5 @@ exports.api = onRequest(
     }
   }
 );
+
 
