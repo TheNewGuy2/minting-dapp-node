@@ -22,15 +22,23 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          # Use ci when the lockfile matches; fall back to install on first pass
+          if [ -f package-lock.json ]; then
+            npm ci || npm install
+          else
+            npm install
+          fi
 
-      # Auth to Google Cloud using a service account JSON stored in repo secrets
+      # Google Cloud auth using a service account JSON stored as a repo secret
+      # Create this once:
+      #   Repo → Settings → Secrets and variables → Actions → New secret
+      #   Name: FIREBASE_SERVICE_ACCOUNT, Value: <the JSON content>
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -42,6 +50,9 @@ jobs:
       - name: Show Firebase CLI version
         run: firebase --version
 
-      # Deploy only Cloud Functions (uses .firebaserc for the default project)
+      # Deploy only Cloud Functions (uses firebase.json + .firebaserc)
+      # We also pass OPENAI_API_KEY to keep the analyzer happy in CI
       - name: Deploy Functions
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: firebase deploy --only functions --non-interactive
