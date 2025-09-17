@@ -1,25 +1,20 @@
 {
   "name": "minting-dapp-node",
   "version": "1.0.0",
-  "description": "",
+  "private": true,
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js",
-    "deploy": "firebase deploy --only functions:api"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "firebase-admin": "^12.2.0",
-    "firebase-functions": "^5.0.1",
-    "openai": "^4.52.7"
-  },
+  "type": "commonjs",
   "engines": {
-    "node": "18"
+    "node": "22"
+  },
+  "scripts": {
+    "deploy:functions": "firebase deploy --only functions",
+    "serve": "firebase emulators:start",
+    "lint": "echo \"Add your linter here\""
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^6.0.0",
+    "openai": "^4.0.0"
   }
 }
