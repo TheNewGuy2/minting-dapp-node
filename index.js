@@ -19,7 +19,7 @@ exports.apiv2 = onRequest(
     secrets: [OPENAI_API_KEY],
   },
   async (req, res) => {
-    // --- CORS (tighten origin to your domain in production) ---
+    // --- CORS (tighten origin to your domain in production) ---//
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -72,4 +72,5 @@ exports.apiv2 = onRequest(
     }
   }
 );
+
 
