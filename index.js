@@ -11,7 +11,7 @@ const { defineSecret } = require('firebase-functions/params');
 // and ensure the runtime service account has Secret Manager Secret Accessor.
 const OPENAI_API_KEY = defineSecret('OPENAI_API_KEY');
 
-exports.apiV2 = onRequest(
+exports.apiv2 = onRequest(
   {
     region: 'us-central1',
     timeoutSeconds: 60,
@@ -72,3 +72,4 @@ exports.apiV2 = onRequest(
     }
   }
 );
+
