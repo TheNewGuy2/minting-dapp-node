@@ -32,7 +32,7 @@ exports.apiv2 = onRequest(
     if (req.method === 'GET') {
       return res.status(200).json({
         ok: true,
-        name: 'apiV2',
+        name: 'apiv2',
         note: 'Send POST with JSON: { "prompt": "..." }',
       });
     }
@@ -72,5 +72,6 @@ exports.apiv2 = onRequest(
     }
   }
 );
+
 
 
