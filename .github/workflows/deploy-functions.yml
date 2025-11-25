@@ -55,4 +55,4 @@ jobs:
       - name: Deploy Functions
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          run: firebase deploy --only functions --project $GCP_PROJECT
+        run: firebase deploy --only functions --project $GCP_PROJECT
