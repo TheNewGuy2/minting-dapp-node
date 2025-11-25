@@ -3,7 +3,6 @@
 // - Uses defineSecret('OPENAI_API_KEY') bound at runtime.
 // - Creates the OpenAI client *inside* the handler (safe for deploy analysis).
 // - CORS enabled.
-//
 
 // --- Firebase Functions v2 HTTP + Secrets --- //
 const { onRequest } = require('firebase-functions/v2/https');
@@ -19,9 +18,9 @@ const db = admin.firestore();
 const OPENAI_API_KEY = defineSecret('OPENAI_API_KEY');
 
 // -----------------------------------------------------------------------------
-// Existing endpoint: apiv2
+// Endpoint: apiv2
 // -----------------------------------------------------------------------------
-// Minimal chat completion endpoint using OpenAI.
+// Minimal chat completion endpoint using OpenAI for simple { prompt } -> { text }.
 // GET  -> health check
 // POST -> expects { "prompt": "..." } and returns { "text": "..." }
 exports.apiv2 = onRequest(
@@ -60,14 +59,12 @@ exports.apiv2 = onRequest(
         return res.status(400).json({ error: 'Missing "prompt" (string) in body.' });
       }
 
-      // Lazily construct OpenAI client
       const OpenAI = require('openai');
       const apiKey = OPENAI_API_KEY.value() || process.env.OPENAI_API_KEY;
       if (!apiKey) throw new Error('OPENAI_API_KEY is not set in Secret Manager or environment.');
 
       const client = new OpenAI({ apiKey });
 
-      // Minimal example using Chat Completions
       const completion = await client.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
@@ -87,7 +84,84 @@ exports.apiv2 = onRequest(
 );
 
 // -----------------------------------------------------------------------------
-// NEW endpoint: tzevaotChat
+// Endpoint: api (legacy compatibility for /api/completion)
+// -----------------------------------------------------------------------------
+// This function recreates the old Express behavior:
+//
+// POST /api/completion
+//   - req.body is an array of messages for ChatGPT
+//   - responds with the full OpenAI completion object
+exports.api = onRequest(
+  {
+    region: 'us-central1',
+    timeoutSeconds: 60,
+    memory: '256MiB',
+    secrets: [OPENAI_API_KEY],
+  },
+  async (req, res) => {
+    // CORS
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+      return res.status(204).end();
+    }
+
+    // Health check at GET /api
+    if (req.method === 'GET' && (req.path === '/' || req.path === '')) {
+      return res.status(200).json({
+        ok: true,
+        name: 'api',
+        note: 'Legacy endpoint. POST to /api/completion with messages array.',
+      });
+    }
+
+    // We only support POST
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed. Use POST.' });
+    }
+
+    try {
+      // We expect calls to /api/completion
+      // On v2 onRequest, req.path will be "/completion" when hitting /api/completion.
+      const path = req.path || '/';
+
+      if (path !== '/completion') {
+        return res.status(404).json({ error: `Unknown path "${path}". Expected "/completion".` });
+      }
+
+      const messages = req.body;
+      if (!Array.isArray(messages)) {
+        return res
+          .status(400)
+          .json({ error: 'Body must be an array of messages for /api/completion.' });
+      }
+
+      const OpenAI = require('openai');
+      const apiKey = OPENAI_API_KEY.value() || process.env.OPENAI_API_KEY;
+      if (!apiKey) throw new Error('OPENAI_API_KEY is not set in Secret Manager or environment.');
+
+      const client = new OpenAI({ apiKey });
+
+      const completion = await client.chat.completions.create({
+        model: 'gpt-4o',
+        messages,
+      });
+
+      // Match old behavior: return the full completion object
+      return res.send(completion);
+    } catch (error) {
+      console.error('Error in /api/completion:', error);
+      return res
+        .status(500)
+        .send({ msg: 'Internal Server Error', error: error?.message || String(error) });
+    }
+  }
+);
+
+// -----------------------------------------------------------------------------
+// Endpoint: tzevaotChat
 // -----------------------------------------------------------------------------
 // This is the Dapp-facing chat endpoint for the Tzevaot persona.
 // POST body: { walletAddress, isHolder, message }
@@ -195,8 +269,3 @@ Behavior:
     }
   }
 );
-exports.api = exports.apiv2;
-
-
-
-
