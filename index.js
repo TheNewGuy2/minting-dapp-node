@@ -3,6 +3,7 @@
 // - Uses defineSecret('OPENAI_API_KEY') bound at runtime.
 // - Creates the OpenAI client *inside* the handler (safe for deploy analysis).
 // - CORS enabled.
+//
 
 // --- Firebase Functions v2 HTTP + Secrets --- //
 const { onRequest } = require('firebase-functions/v2/https');
@@ -195,6 +196,7 @@ Behavior:
   }
 );
 exports.api = exports.apiv2;
+
 
 
 
